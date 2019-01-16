@@ -1,0 +1,35 @@
+---
+title: "Data Tidying"
+author: "Carolyn Kurle"
+date: "January 16, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, warning = F, message = F}
+library(dplyr)
+library(tidyr)
+```
+
+To call a function from a specific package if the language for that function is the same between packages, type this: 'package_name::function_name(...)'
+
+# Data Cleaning
+
+Read in data File
+```{r}
+catch_df <-read.csv(url("https://knb.ecoinformatics.org/knb/d1/mn/v2/object/df35b.302.1",
+                        method = "libcurl"),
+                    stringsAsFactors = FALSE)
+
+
+head(catch_df)
+
+```
+
+
+# Split-Apply-Combine
+
+# Joins
