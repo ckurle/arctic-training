@@ -57,16 +57,27 @@ You can create new columns in your data using mutate. We wanted to change our nu
 
 We did test_catch to replace non-integers with NA. But that's not great. We assign a value to i which when you have na in test catch that equals true. That brings up our one error. We tried to force NA, but R didn't like that and said NAs were introduced by coercion. We then used the i format thing in the code below.
 
-The hash tags are added in the below code to avoid R trying to run that problematic code (mutate)that we'll fix later...
+The hash tags are added in the below code to avoid R trying to run that problematic code (mutate)that we'll fix later.
+
+To fix that error, we entered another mutate and we entered mutate(catch = ifelse). This is a conditional element selection. If the ifelse comes back as true, we want to have it replace it with a 1, or leave it if it's not. Then you have to turn that "1" into an integer which is the next mutate line. Before that, it was "1" as a letter. Which is weird. But now it's a number and not a character.
+
+Then we can add the mutate line that turns the catch thousands into numbers that are actually multiplied by 1000.
+
+Comments entered by Jeanette to address this were: eroneous value due to OCR issue = change "I" to one. Create catch column in correct units (thousands)
 
 ```{r}
 catch_cleaned <- catch_long %>% 
-  rename(catch_thousands = catch) #%>% 
-  #mutate(catch = catch_thousands * 1000)
+  rename(catch_thousands = catch) %>%
+  mutate(catch_thousands = ifelse(catch_thousands == "I", 1, catch_thousands)) %>% 
+  mutate(catch_thousands = as.integer(catch_thousands)) %>% 
+  mutate(catch = catch_thousands * 1000)
 
 head(catch_cleaned)
 ```
-```{r}
+```{r, eval = F, echo = F}
+
+# I used this bit of code to find the bad value in the data set. Eval = F means that it won't evaluate this statement every single time and it won't show my code every single time I run this. But it will stay here as something instructional for me.
+
 test_catch <- as.integer(catch_cleaned$catch_thousands)
 
 i <- which(is.na(test_catch) == T)
@@ -76,5 +87,68 @@ catch_cleaned[i, ]
 This allowed us to find the line (401) where our error was. This is an "l" but it should be a "1". Looking at the original data notes, we can see that that was supposed to be a 1 and we can go back and change it manually.
 
 # Split-Apply-Combine
+
+Calculate total catch by region
+
+We want to group the data by region, then create a summarize column of the fish per region. We're creating a new data frame called catch_total. YOu could also group by year. I added that after region to do that as well. You can add multiple grouping variables separated by commas after the group by command.
+
+We also added the number of observations per region per year. It's 5 in all cases here since there are only 5 species of salmon measured for each year and region.
+
+```{r}
+catch_total <- catch_cleaned %>% 
+  group_by(Region, Year) %>% 
+  summarize(catch_region = sum(catch),
+            n_obs = n())
+
+head(catch_total)
+```
+
+Now, I'm going to play with this group by function to think of other ways to group the data.
+
+In this example, I decided I wanted to figure out the mean catch per species per year. I call the new data frame Catch_by_species_year and tell it to get it's data from the catch_cleaned frame. Then I "pipe" those data into a group by function that will group data by species and year then pipe those data into a summarize function that takes creates a column called catch_mean and that takes the mean of the column catch from the original catch_cleaned data.
+
+```{r}
+Catch_by_species_year <- catch_cleaned %>% 
+  #the above means I've created a new frame that I've decided to call it Catch_by_species_year and that that new frame will use data from catch cleaned. then I entered the pipe function symbols that will tell it to pipe that outcome into the next command#
+  group_by(species, Year) %>%
+  
+  #then I entered the group by function to tell it to group all the data by species and year. Then I do the pipe function again.#
+  
+  summarize(catch_mean = mean(catch))
+
+#then I tell it to summarize those data into a new column in my new data from and it's going to be catch_mean and it's going to use the catch data from catch_cleaned for calculating those means#
+  
+head(Catch_by_species_year)
+```
+
+Now we're going to filter for chinook salmon only. NOte - that head command means it's going to show you the head of the table (the first 6 rows). Tail would show you the last few rows.
+
+In the next gray box, we filtered for both chinook and chum
+
+```{r}
+catch_chinook <- catch_cleaned %>% 
+  filter(species == "Chinook")
+
+head(catch_chinook)
+```
+```{r}
+catch_chinook_Chum <- catch_cleaned %>% 
+  filter(species == "Chinook" |  species == "Chum")
+
+#| means "or". You're telling it to filter for chinook or chum. Use the & if you want it to filter by 2 things at the same time. 
+head(catch_chinook_Chum)
+```
+
+We could filter by a region and year.
+
+```{r}
+catch_chinook_region_year <- catch_cleaned %>% 
+  filter(species == "Chinook" & Region == "SSE" & Year > 1990)
+
+head(catch_chinook_region_year)
+```
+ 
+ Can also change how your sort or filter sorts. Ascending or descending.
+
 
 # Joins

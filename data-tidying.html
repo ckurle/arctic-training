@@ -232,30 +232,108 @@ head(catch_long)</code></pre>
 <p>The catch data are listed in thousands of fish. So it would make sense to show this. First we’re calling the data from catch long and then renaming catch to catch_thousands.</p>
 <p>You can create new columns in your data using mutate. We wanted to change our numbers to numbers in the thousands and add that column. We got an error indicating that there’s a word or nonnumberic in the catch column that can’t be multiplied by 1000. We have to find that. We have to create a new block, then find that mistake.</p>
 <p>We did test_catch to replace non-integers with NA. But that’s not great. We assign a value to i which when you have na in test catch that equals true. That brings up our one error. We tried to force NA, but R didn’t like that and said NAs were introduced by coercion. We then used the i format thing in the code below.</p>
-<p>The hash tags are added in the below code to avoid R trying to run that problematic code (mutate)that we’ll fix later…</p>
+<p>The hash tags are added in the below code to avoid R trying to run that problematic code (mutate)that we’ll fix later.</p>
+<p>To fix that error, we entered another mutate and we entered mutate(catch = ifelse). This is a conditional element selection. If the ifelse comes back as true, we want to have it replace it with a 1, or leave it if it’s not. Then you have to turn that “1” into an integer which is the next mutate line. Before that, it was “1” as a letter. Which is weird. But now it’s a number and not a character.</p>
+<p>Then we can add the mutate line that turns the catch thousands into numbers that are actually multiplied by 1000.</p>
+<p>Comments entered by Jeanette to address this were: eroneous value due to OCR issue = change “I” to one. Create catch column in correct units (thousands)</p>
 <pre class="r"><code>catch_cleaned &lt;- catch_long %&gt;% 
-  rename(catch_thousands = catch) #%&gt;% 
-  #mutate(catch = catch_thousands * 1000)
+  rename(catch_thousands = catch) %&gt;%
+  mutate(catch_thousands = ifelse(catch_thousands == &quot;I&quot;, 1, catch_thousands)) %&gt;% 
+  mutate(catch_thousands = as.integer(catch_thousands)) %&gt;% 
+  mutate(catch = catch_thousands * 1000)
 
 head(catch_cleaned)</code></pre>
-<pre><code>##   Region Year species catch_thousands
-## 1    SSE 1886 Chinook               0
-## 2    SSE 1887 Chinook               0
-## 3    SSE 1888 Chinook               0
-## 4    SSE 1889 Chinook               0
-## 5    SSE 1890 Chinook               0
-## 6    SSE 1891 Chinook               0</code></pre>
-<pre class="r"><code>test_catch &lt;- as.integer(catch_cleaned$catch_thousands)</code></pre>
-<pre><code>## Warning: NAs introduced by coercion</code></pre>
-<pre class="r"><code>i &lt;- which(is.na(test_catch) == T)
-
-catch_cleaned[i, ]</code></pre>
-<pre><code>##     Region Year species catch_thousands
-## 401    GSE 1955 Chinook               I</code></pre>
+<pre><code>##   Region Year species catch_thousands catch
+## 1    SSE 1886 Chinook               0     0
+## 2    SSE 1887 Chinook               0     0
+## 3    SSE 1888 Chinook               0     0
+## 4    SSE 1889 Chinook               0     0
+## 5    SSE 1890 Chinook               0     0
+## 6    SSE 1891 Chinook               0     0</code></pre>
 <p>This allowed us to find the line (401) where our error was. This is an “l” but it should be a “1”. Looking at the original data notes, we can see that that was supposed to be a 1 and we can go back and change it manually.</p>
 </div>
 <div id="split-apply-combine" class="section level1">
 <h1>Split-Apply-Combine</h1>
+<p>Calculate total catch by region</p>
+<p>We want to group the data by region, then create a summarize column of the fish per region. We’re creating a new data frame called catch_total. YOu could also group by year. I added that after region to do that as well. You can add multiple grouping variables separated by commas after the group by command.</p>
+<p>We also added the number of observations per region per year. It’s 5 in all cases here since there are only 5 species of salmon measured for each year and region.</p>
+<pre class="r"><code>catch_total &lt;- catch_cleaned %&gt;% 
+  group_by(Region, Year) %&gt;% 
+  summarize(catch_region = sum(catch),
+            n_obs = n())
+
+head(catch_total)</code></pre>
+<pre><code>## # A tibble: 6 x 4
+## # Groups:   Region [1]
+##   Region  Year catch_region n_obs
+##   &lt;chr&gt;  &lt;int&gt;        &lt;dbl&gt; &lt;int&gt;
+## 1 ALU     1911         9000     5
+## 2 ALU     1912            0     5
+## 3 ALU     1913            0     5
+## 4 ALU     1914            0     5
+## 5 ALU     1915            0     5
+## 6 ALU     1916       257000     5</code></pre>
+<p>Now, I’m going to play with this group by function to think of other ways to group the data.</p>
+<p>In this example, I decided I wanted to figure out the mean catch per species per year. I call the new data frame Catch_by_species_year and tell it to get it’s data from the catch_cleaned frame. Then I “pipe” those data into a group by function that will group data by species and year then pipe those data into a summarize function that takes creates a column called catch_mean and that takes the mean of the column catch from the original catch_cleaned data.</p>
+<pre class="r"><code>Catch_by_species_year &lt;- catch_cleaned %&gt;% 
+  #the above means I've created a new frame that I've decided to call it Catch_by_species_year and that that new frame will use data from catch cleaned. then I entered the pipe function symbols that will tell it to pipe that outcome into the next command#
+  group_by(species, Year) %&gt;%
+  
+  #then I entered the group by function to tell it to group all the data by species and year. Then I do the pipe function again.#
+  
+  summarize(catch_mean = mean(catch))
+
+#then I tell it to summarize those data into a new column in my new data from and it's going to be catch_mean and it's going to use the catch data from catch_cleaned for calculating those means#
+  
+head(Catch_by_species_year)</code></pre>
+<pre><code>## # A tibble: 6 x 3
+## # Groups:   species [1]
+##   species  Year catch_mean
+##   &lt;chr&gt;   &lt;int&gt;      &lt;dbl&gt;
+## 1 Chinook  1878          0
+## 2 Chinook  1879          0
+## 3 Chinook  1880          0
+## 4 Chinook  1881          0
+## 5 Chinook  1882          0
+## 6 Chinook  1883          0</code></pre>
+<p>Now we’re going to filter for chinook salmon only. NOte - that head command means it’s going to show you the head of the table (the first 6 rows). Tail would show you the last few rows.</p>
+<p>In the next gray box, we filtered for both chinook and chum</p>
+<pre class="r"><code>catch_chinook &lt;- catch_cleaned %&gt;% 
+  filter(species == &quot;Chinook&quot;)
+
+head(catch_chinook)</code></pre>
+<pre><code>##   Region Year species catch_thousands catch
+## 1    SSE 1886 Chinook               0     0
+## 2    SSE 1887 Chinook               0     0
+## 3    SSE 1888 Chinook               0     0
+## 4    SSE 1889 Chinook               0     0
+## 5    SSE 1890 Chinook               0     0
+## 6    SSE 1891 Chinook               0     0</code></pre>
+<pre class="r"><code>catch_chinook_Chum &lt;- catch_cleaned %&gt;% 
+  filter(species == &quot;Chinook&quot; |  species == &quot;Chum&quot;)
+
+#| means &quot;or&quot;. You're telling it to filter for chinook or chum. Use the &amp; if you want it to filter by 2 things at the same time. 
+head(catch_chinook_Chum)</code></pre>
+<pre><code>##   Region Year species catch_thousands catch
+## 1    SSE 1886 Chinook               0     0
+## 2    SSE 1887 Chinook               0     0
+## 3    SSE 1888 Chinook               0     0
+## 4    SSE 1889 Chinook               0     0
+## 5    SSE 1890 Chinook               0     0
+## 6    SSE 1891 Chinook               0     0</code></pre>
+<p>We could filter by a region and year.</p>
+<pre class="r"><code>catch_chinook_region_year &lt;- catch_cleaned %&gt;% 
+  filter(species == &quot;Chinook&quot; &amp; Region == &quot;SSE&quot; &amp; Year &gt; 1990)
+
+head(catch_chinook_region_year)</code></pre>
+<pre><code>##   Region Year species catch_thousands  catch
+## 1    SSE 1991 Chinook             120 120000
+## 2    SSE 1992 Chinook              88  88000
+## 3    SSE 1993 Chinook              98  98000
+## 4    SSE 1994 Chinook              56  56000
+## 5    SSE 1995 Chinook              32  32000
+## 6    SSE 1996 Chinook              24  24000</code></pre>
+<p>Can also change how your sort or filter sorts. Ascending or descending.</p>
 </div>
 <div id="joins" class="section level1">
 <h1>Joins</h1>
