@@ -26,7 +26,27 @@ catch_df <-read.csv(url("https://knb.ecoinformatics.org/knb/d1/mn/v2/object/df35
 
 
 head(catch_df)
+```
+cntrl shift m is the shortcut for the pipe operator which looks like this: %<%
+%>% 
 
+We are now going to restructure the catch data into a tidy format. We created catch cleaned and moved some of the data from catch df into catch cleaned. So, the command below (catch_cleaned <- catch_df %>% 
+  select(Region, Year, Chinook, Sockeye, Coho, Pink, Chum)) reads like this in English: catch_cleaned gets the values from catch df and then selects (pipes) certain columns from catch df to create a new data frame
+  
+  That removed the marginal sum and notes column
+
+Next, we're going to gather the pertinent data into the key. We're going to gather everything except don't gather year, don't gather region.
+
+This moved it from wide to long format and into the tidy version that we created when we did the hands on exercise with Matt. Now, the data are in a tall data table format that is what we want for analysis.
+
+```{r}
+
+catch_cleaned <- catch_df %>% 
+  select(Region, Year, Chinook, Sockeye, Coho, Pink, Chum) %>% 
+  gather(key = "species", value = "catch", -Year, -Region)
+
+
+head(catch_cleaned)
 ```
 
 
