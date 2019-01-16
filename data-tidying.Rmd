@@ -152,3 +152,49 @@ head(catch_chinook_region_year)
 
 
 # Joins
+
+
+Now we are going to learn how to use joins within dplyr. We are going to use a left join to join the region data with the catch data. The region data is another data frame from our example. The left join is most common. Your left data frame is the one that is going to hold all of our data that we're only going to add a little bit of data to. The second is the right frame. In this case, our catch data is the left frame and the region data is the right.
+
+We have to bring in our region data:
+
+
+```{r}
+region_defs <- read.csv(url("https://knb.ecoinformatics.org/knb/d1/mn/v2/object/df35b.303.1", method = "libcurl"),
+                        stringsAsFactors = FALSE)
+
+head(region_defs)
+```
+
+We're going to clean up the data a bit.
+
+```{r}
+region_clean <- region_defs %>% 
+  select(code, mgmtArea)
+
+head(region_clean)
+```
+
+Now we're going to join the two data frames. Call it something different so it will be its own frame.
+
+We got an error as the code column titles weren't the same. Code vs. Region.
+
+To get passed this we'll tell it to do the left join and then in the left frame it's called region and in the right frame it's called code. Now it knows those are OK. by the way, the c stands for concantinate.
+
+
+```{r}
+catch_join <- left_join(catch_cleaned, region_clean,
+                        by = c("Region" = "code"))
+
+head(catch_join)
+```
+
+You could also just rename the columns the same thing back at the beginning. That would have looked like this: 
+
+region_clean <- region_defs %>% 
+  select(code, mgmtArea)
+  rename (Region = code)
+
+head(region_clean)
+
+When do you quote column names and when do you not? Dplyr will take quoted or non-quoted. Probably when in doubt, just use the quotations marks.  
