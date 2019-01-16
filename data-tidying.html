@@ -215,13 +215,13 @@ head(catch_df)</code></pre>
 <p>We are now going to restructure the catch data into a tidy format. We created catch cleaned and moved some of the data from catch df into catch cleaned. So, the command below (catch_cleaned &lt;- catch_df %&gt;% select(Region, Year, Chinook, Sockeye, Coho, Pink, Chum)) reads like this in English: catch_cleaned gets the values from catch df and then selects (pipes) certain columns from catch df to create a new data frame</p>
 <p>That removed the marginal sum and notes column</p>
 <p>Next, we’re going to gather the pertinent data into the key. We’re going to gather everything except don’t gather year, don’t gather region.</p>
-<p>This moved it from wide to long format and into the tidy version that we created when we did the hands on exercise with Matt. Now, the data are in a tall data table format that is what we want for analysis.</p>
-<pre class="r"><code>catch_cleaned &lt;- catch_df %&gt;% 
+<p>This moved it from wide to long format and into the tidy version that we created when we did the hands on exercise with Matt. Now, the data are in a tall data table format that is what we want for analysis. We changed the name from Catch cleaned to catch long because the catch data is now in the long format data frame and it’s not quite all the way clean. Jeanette wanted to save the name catch cleaned for the end.</p>
+<pre class="r"><code>catch_long &lt;- catch_df %&gt;% 
   select(Region, Year, Chinook, Sockeye, Coho, Pink, Chum) %&gt;% 
   gather(key = &quot;species&quot;, value = &quot;catch&quot;, -Year, -Region)
 
 
-head(catch_cleaned)</code></pre>
+head(catch_long)</code></pre>
 <pre><code>##   Region Year species catch
 ## 1    SSE 1886 Chinook     0
 ## 2    SSE 1887 Chinook     0
@@ -229,6 +229,30 @@ head(catch_cleaned)</code></pre>
 ## 4    SSE 1889 Chinook     0
 ## 5    SSE 1890 Chinook     0
 ## 6    SSE 1891 Chinook     0</code></pre>
+<p>The catch data are listed in thousands of fish. So it would make sense to show this. First we’re calling the data from catch long and then renaming catch to catch_thousands.</p>
+<p>You can create new columns in your data using mutate. We wanted to change our numbers to numbers in the thousands and add that column. We got an error indicating that there’s a word or nonnumberic in the catch column that can’t be multiplied by 1000. We have to find that. We have to create a new block, then find that mistake.</p>
+<p>We did test_catch to replace non-integers with NA. But that’s not great. We assign a value to i which when you have na in test catch that equals true. That brings up our one error. We tried to force NA, but R didn’t like that and said NAs were introduced by coercion. We then used the i format thing in the code below.</p>
+<p>The hash tags are added in the below code to avoid R trying to run that problematic code (mutate)that we’ll fix later…</p>
+<pre class="r"><code>catch_cleaned &lt;- catch_long %&gt;% 
+  rename(catch_thousands = catch) #%&gt;% 
+  #mutate(catch = catch_thousands * 1000)
+
+head(catch_cleaned)</code></pre>
+<pre><code>##   Region Year species catch_thousands
+## 1    SSE 1886 Chinook               0
+## 2    SSE 1887 Chinook               0
+## 3    SSE 1888 Chinook               0
+## 4    SSE 1889 Chinook               0
+## 5    SSE 1890 Chinook               0
+## 6    SSE 1891 Chinook               0</code></pre>
+<pre class="r"><code>test_catch &lt;- as.integer(catch_cleaned$catch_thousands)</code></pre>
+<pre><code>## Warning: NAs introduced by coercion</code></pre>
+<pre class="r"><code>i &lt;- which(is.na(test_catch) == T)
+
+catch_cleaned[i, ]</code></pre>
+<pre><code>##     Region Year species catch_thousands
+## 401    GSE 1955 Chinook               I</code></pre>
+<p>This allowed us to find the line (401) where our error was. This is an “l” but it should be a “1”. Looking at the original data notes, we can see that that was supposed to be a 1 and we can go back and change it manually.</p>
 </div>
 <div id="split-apply-combine" class="section level1">
 <h1>Split-Apply-Combine</h1>

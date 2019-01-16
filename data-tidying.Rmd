@@ -37,18 +37,43 @@ We are now going to restructure the catch data into a tidy format. We created ca
 
 Next, we're going to gather the pertinent data into the key. We're going to gather everything except don't gather year, don't gather region.
 
-This moved it from wide to long format and into the tidy version that we created when we did the hands on exercise with Matt. Now, the data are in a tall data table format that is what we want for analysis.
+This moved it from wide to long format and into the tidy version that we created when we did the hands on exercise with Matt. Now, the data are in a tall data table format that is what we want for analysis. We changed the name from Catch cleaned to catch long because the catch data is now in the long format data frame and it's not quite all the way clean. Jeanette wanted to save the name catch cleaned for the end.
 
 ```{r}
 
-catch_cleaned <- catch_df %>% 
+catch_long <- catch_df %>% 
   select(Region, Year, Chinook, Sockeye, Coho, Pink, Chum) %>% 
   gather(key = "species", value = "catch", -Year, -Region)
 
 
-head(catch_cleaned)
+head(catch_long)
 ```
 
+
+The catch data are listed in thousands of fish. So it would make sense to show this. 
+First we're calling the data from catch long and then renaming catch to catch_thousands.
+
+You can create new columns in your data using mutate. We wanted to change our numbers to numbers in the thousands and add that column. We got an error indicating that there's a word or nonnumberic in the catch column that can't be multiplied by 1000. We have to find that. We have to create a new block, then find that mistake.
+
+We did test_catch to replace non-integers with NA. But that's not great. We assign a value to i which when you have na in test catch that equals true. That brings up our one error. We tried to force NA, but R didn't like that and said NAs were introduced by coercion. We then used the i format thing in the code below.
+
+The hash tags are added in the below code to avoid R trying to run that problematic code (mutate)that we'll fix later...
+
+```{r}
+catch_cleaned <- catch_long %>% 
+  rename(catch_thousands = catch) #%>% 
+  #mutate(catch = catch_thousands * 1000)
+
+head(catch_cleaned)
+```
+```{r}
+test_catch <- as.integer(catch_cleaned$catch_thousands)
+
+i <- which(is.na(test_catch) == T)
+
+catch_cleaned[i, ]
+```
+This allowed us to find the line (401) where our error was. This is an "l" but it should be a "1". Looking at the original data notes, we can see that that was supposed to be a 1 and we can go back and change it manually.
 
 # Split-Apply-Combine
 
