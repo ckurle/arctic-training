@@ -197,4 +197,57 @@ region_clean <- region_defs %>%
 
 head(region_clean)
 
-When do you quote column names and when do you not? Dplyr will take quoted or non-quoted. Probably when in doubt, just use the quotations marks.  
+When do you quote column names and when do you not? Dplyr will take quoted or non-quoted. Probably when in doubt, just use the quotations marks. 
+
+
+## Spread
+
+Sometimes you want to use your data in wide format. You want to go from tall into wide.
+Make a wide data frame using spread.
+
+We're going to filter it by the year so it's not so crazy wide and we're going to drop the catch_thousands column. We're going to take the numbers in the catch column, the numbers for each year, and then the appropriate catch volumes will go into each year.
+
+```{r}
+catch_wide <- catch_cleaned %>%
+  filter(Year > 1990) %>% 
+  select(-catch_thousands) %>% 
+  spread(key = Year, value = catch)
+
+head(catch_wide)
+  
+```
+
+Now we're going to use a fake data set to illustrate the separate and unite functions.
+
+The way these dates are listed are not great. YYYY-MM-DD is better.
+
+```{r}
+dates_df <- data.frame(date = c("5/24/1930",
+                                "5/25/1930",
+                                "5/26/1930",
+                                "5/27/1930",
+                                "5/28/1930"),
+                       stringsAsFactors = FALSE)
+
+dates_df
+```
+
+We can use the separate function to fix these dates. Similar to the Excel function that does this.We've told it how to separate the data and that the separator is the /. Adding remove = F means it will keep the original date column. The default is remove = T which would remove that column
+
+```{r}
+dates_sep <- dates_df %>% 
+  separate(col = date, into = c("month", "day", "year"), sep = "/", remove = F)
+
+head(dates_sep)
+```
+
+Another way to change the format of dates:
+
+
+```{r}
+dates_unite <- dates_sep %>% 
+  unite(date_iso, year, month, day, sep = "-")
+
+head(dates_unite)
+```
+

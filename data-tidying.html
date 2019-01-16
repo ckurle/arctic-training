@@ -387,6 +387,62 @@ head(catch_join)</code></pre>
 <p>region_clean &lt;- region_defs %&gt;% select(code, mgmtArea) rename (Region = code)</p>
 <p>head(region_clean)</p>
 <p>When do you quote column names and when do you not? Dplyr will take quoted or non-quoted. Probably when in doubt, just use the quotations marks.</p>
+<div id="spread" class="section level2">
+<h2>Spread</h2>
+<p>Sometimes you want to use your data in wide format. You want to go from tall into wide. Make a wide data frame using spread.</p>
+<p>We’re going to filter it by the year so it’s not so crazy wide and we’re going to drop the catch_thousands column. We’re going to take the numbers in the catch column, the numbers for each year, and then the appropriate catch volumes will go into each year.</p>
+<pre class="r"><code>catch_wide &lt;- catch_cleaned %&gt;%
+  filter(Year &gt; 1990) %&gt;% 
+  select(-catch_thousands) %&gt;% 
+  spread(key = Year, value = catch)
+
+head(catch_wide)</code></pre>
+<pre><code>##   Region species 1991   1992 1993   1994 1995 1996 1997
+## 1    ALU Chinook    0      0    0      0    0    0    0
+## 2    ALU    Chum    0   2000 1000   1000    0    0    0
+## 3    ALU    Coho    0      0    0      0    0    0    0
+## 4    ALU    Pink    0 320000    0 860000    0    0    0
+## 5    ALU Sockeye 1000   3000    0      0    0    0    0
+## 6    BER Chinook    0      0    0      0    0    0    0</code></pre>
+<p>Now we’re going to use a fake data set to illustrate the separate and unite functions.</p>
+<p>The way these dates are listed are not great. YYYY-MM-DD is better.</p>
+<pre class="r"><code>dates_df &lt;- data.frame(date = c(&quot;5/24/1930&quot;,
+                                &quot;5/25/1930&quot;,
+                                &quot;5/26/1930&quot;,
+                                &quot;5/27/1930&quot;,
+                                &quot;5/28/1930&quot;),
+                       stringsAsFactors = FALSE)
+
+dates_df</code></pre>
+<pre><code>##        date
+## 1 5/24/1930
+## 2 5/25/1930
+## 3 5/26/1930
+## 4 5/27/1930
+## 5 5/28/1930</code></pre>
+<p>We can use the separate function to fix these dates. Similar to the Excel function that does this.We’ve told it how to separate the data and that the separator is the /. Adding remove = F means it will keep the original date column. The default is remove = T which would remove that column</p>
+<pre class="r"><code>dates_sep &lt;- dates_df %&gt;% 
+  separate(col = date, into = c(&quot;month&quot;, &quot;day&quot;, &quot;year&quot;), sep = &quot;/&quot;, remove = F)
+
+head(dates_sep)</code></pre>
+<pre><code>##        date month day year
+## 1 5/24/1930     5  24 1930
+## 2 5/25/1930     5  25 1930
+## 3 5/26/1930     5  26 1930
+## 4 5/27/1930     5  27 1930
+## 5 5/28/1930     5  28 1930</code></pre>
+<p>Another way to change the format of dates:</p>
+<pre class="r"><code>dates_unite &lt;- dates_sep %&gt;% 
+  unite(date_iso, year, month, day, sep = &quot;-&quot;)
+
+head(dates_unite)</code></pre>
+<pre><code>##        date  date_iso
+## 1 5/24/1930 1930-5-24
+## 2 5/25/1930 1930-5-25
+## 3 5/26/1930 1930-5-26
+## 4 5/27/1930 1930-5-27
+## 5 5/28/1930 1930-5-28</code></pre>
+</div>
 </div>
 
 
