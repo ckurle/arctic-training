@@ -172,4 +172,16 @@ ggsave("region_escapement.png",
        width = 8,
        units = "in")
 ```
+If you want to save a new or amended data frame to your harddrive, create a new folder in your files pane to the right, then do this code: 
+It's the write.csv funtion.
+
+You may not want to add this to your github directories as it's too big. You could add a gitignore command. 
+
+
+```{r}
+write.csv(annual_esc,
+          "derived_data/annual_escapement.csv",
+          row.names = F)
+```
+
 
