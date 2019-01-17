@@ -9,22 +9,167 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+Call in the libraries you're going to use for this session. Add the warning = F, message = F
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+Go back to this library chunk if you ever need to pull in more libraries
 
-```{r cars}
-summary(cars)
+```{r, warning = F, message = F}
+library (dplyr)
+library (tidyr)
+library (ggplot2)
+library (DT)
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
+We are reading in some salmon escapment data. 
+From Alaska Department of Fish and Game, Division of Commercial Fisheries. 2017. Daily salmon escapement counts from the OceanAK database, Alaska, 1921-2017. Knowledge Network for Biocomplexity. doi:10.5063/F1S46Q6M.
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+ We set strings as factors to F so R will treat strings as factors. It's not something that is always needed. But it's good in this case. It allows you to treat strings as strings.
+
+```{r}
+esc <- read.csv(url("https://knb.ecoinformatics.org/knb/d1/mn/v2/object/urn%3Auuid%3Af119a05b-bbe7-4aea-93c6-85434dcb1c5e", method = "libcurl"),
+               stringsAsFactors = F)
+
+head(esc)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+Calculate annual, regional total escapement
+
+* 'separate' date into year - month - day. The c is the concatenate function and so you put your separations into "". The separator is the dash. It returned the data as characters (chr). We want to turn the year into a numeric value.
+
+* 'group_by' and 'summarize' to calculate the sm over unique region-year-species combinations
+
+Filter species %in% which is useful when you need to group "or" into a list. Otherwise you'd have to type or between each species
+
+```{r}
+annual_esc <- esc %>% 
+  separate(sampleDate, into = c("Year", "Month", "Day"), sep = '-') %>% 
+  mutate(Year = as.numeric(Year)) %>%
+  group_by(SASAP.Region, Species, Year) %>% 
+  summarise(escapement = sum(DailyCount)) %>% 
+  filter(Species %in% c("Chinook", "Sockeye", "Pink", "Chum", "Coho"))
+
+head(annual_esc)
+```
+WE are going to create a data table of our data. An interactive table. We need DT library to do this. So I called that library in above in my library chunk and executed that chunk.
+
+If you don't want to show all of these details in your knitted file, you can set echo = false in your initial {r} part. It would be: '''{r, echo = F}
+
+```{r}
+datatable(annual_esc)
+```
+
+# Static Plots
+# ggplot
+
+aes is a function that stands for aesthetics. The aes function will map the columns in the data frame to wherever you want them to go in th eplot. The X or Y axis or the color you want to assign to variables. It tells ggplot which columns to pick from your data frame and how to map them onto your plot.
+
+We're comparing escapment by species first so x = species, y = escapement
+
+Then we'll add some geometries with the function geom col. You use a + because you're going to add your data in a column format. You're telling it to add the annual escapement data by species in column format. There are lots of different function calls you could use to make different kind of plots. You use the "+" instead of the pipe %>% that dplyr uses. Typing ?geom_ into the console will bring up a huge list of different plot types.
+
+You can use different commands to color it, etc. But don't include that in your aesthetic mapping call. It's looking for a column called blue, it can't find it, so it's made a column called blue on the back end of the data. To change properties of the table that aren't mapped to variables, they have to be inside the geom call, but not inside the aes call. 
+
+```{r}
+ggplot(data = annual_esc, mapping = aes(x = Species, y = escapement, fill = "blue")) +
+  geom_col()
+```
+
+We'll change this here so now it makes the columns blue.
+
+```{r}
+ggplot(data = annual_esc, mapping = aes(x = Species, y = escapement)) +
+  geom_col(fill = "blue")
+```
+
+You can also make them different colors by species
+
+Data Visualization with ggplot2 cheatsheet will help you figure out all the options for everything. Changing colors, etc. Those will be in the Help, Cheatsheets above. 
+
+```{r}
+ggplot(data = annual_esc, mapping = aes(x = Species, y = escapement, fill = Species)) +
+  geom_col()
+```
+
+Now we want to add year
+
+```{r}
+ggplot(data = annual_esc, mapping = aes(x = Species, y = escapement, fill = SASAP.Region)) +
+  geom_col()
+```
+Now we might to only look at the Kodiak Data
+
+Create a timeseries of Kodiak Escapement by Species
+
+We want to color it by species. We use color for fonts and symbols. We use fill to fill colors of bars, etc.
+I've nested the functions inside of my ggplot call, but you could also create a new data frame with only the Kodiak data using dplyr functions and then do the plotting. sometimes it makes sense to do that. Especially if you're going to do a lot of plotting with only those data. Then you don't have to filter it each time. Just depends what you want to do. Creating tons of data frames may be unwelcome or unnecessary.
+
+
+```{r}
+ggplot(data = filter(annual_esc, SASAP.Region == "Kodiak"),
+       aes(x = Year, y = escapement, color = Species)) +
+  geom_line()
+```
+
+Now we can add multiple geometries onto a plot. Say we want to know where the actual points are.
+Add the geom_point funtion.
+
+You could change the x and y labels. Or the Title. You just have to be sure to add all of the function calls onto your ggplot object with that plus sign (+). Special characters can be difficult to add, but you can use the unicode character for whatever you want. That's in your keyboard somewhere by holding down the alt key and typing in a number string (Google this).
+
+It also has a bunch of themes you can use to set a bunch of properties on the plot. It will make the background white or add a border or take away a border, etc.  Type theme_ and a bunch of choices will come up. You can also use theme to call up specific calls like title, etc. Google what you want to do in ggplot2 using the different themes and then you can add theme calls into your code to center the title or whatever you want to do. You can also create a my_theme set of rubrics that you always like to use, then add that bit of code into your ggplot at the beginning and it will apply that to all your plots. 
+
+For example: my_theme <- theme_bw() +
+theme(plot.title = element_text(hjust = 0.5))
+
+This creates an object that you've defined for R and now you just have to type my_theme when you want to use those theme elements for your plots.
+
+```{r}
+ggplot(data = filter(annual_esc, SASAP.Region == "Kodiak"),
+       aes(x = Year, y = escapement, color = Species)) +
+  geom_line() +
+  geom_point() +
+  ylab("Escapement (number of fish)") +
+  ggtitle("Kodiak Salmon Escapement") +
+  theme_bw() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+Plot timeseries of escapement by species for all regions. We're going to use the function facet wrap within ggplot. This allows us to create a bunch of plots at once. The ~ syntax tells it to compare multiple x and Y axes. In this case, it's breaking them out by SASAP Region.
+
+```{r}
+ggplot(annual_esc, aes(x = Year, y = escapement, color = Species)) +
+  geom_line() +
+  geom_point() +
+  facet_wrap(~SASAP.Region)
+```
+ You can change the y axes per plot or the x axes per plot or the width and height. 
+ 
+```{r, fig.height = 10, fig.width = 6}
+ggplot(annual_esc, aes(x = Year, y = escapement, color = Species)) +
+  geom_line() +
+  geom_point() +
+  facet_wrap(~SASAP.Region, scales = "free", ncol = 2)+
+  theme_classic()
+```
+To save a plot. This ggsave saves only the latest plot you've made.
+
+It saves it to your top level directory. You could create a new folder for Figures and save it to that (ggsave("figures/region_escapement.png")) if that's cleaner.
+
+Also, you can save it as another type (jpg or tif or whatever you like)
+
+
+```{r, fig.height = 10, fig.width = 6}
+ggplot(annual_esc, aes(x = Year, y = escapement, color = Species)) +
+  geom_line() +
+  geom_point() +
+  facet_wrap(~SASAP.Region, scales = "free", ncol = 2)+
+  theme_classic()
+
+ggsave("region_escapement.png",
+       height = 10,
+       width = 8,
+       units = "in")
+```
+
