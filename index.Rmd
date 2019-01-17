@@ -19,6 +19,7 @@ library (dplyr)
 library (tidyr)
 library (ggplot2)
 library (DT)
+library (leaflet)
 ```
 
 
@@ -182,6 +183,52 @@ You may not want to add this to your github directories as it's too big. You cou
 write.csv(annual_esc,
           "derived_data/annual_escapement.csv",
           row.names = F)
+```
+
+# Interactive map using Leaflet
+
+First we'll add the library leaflet to our library call list at the top.
+
+We're going to make a map using leaflet
+
+*Find unique locations with lat and long values
+
+Create a new data frame called locations
+
+We'll use distinct from tdyr
+
+
+```{r}
+locations <- esc %>% 
+  distinct(Location, Latitude, Longitude)
+
+datatable(locations)
+```
+
+
+There are missing lat and long values so we can fix that using drop na function from tidyr. This will drop all NAs in your data set, so beware of this. In our case, we don't care as we're only working with Lat and Long NAs in this example. 
+
+```{r}
+locations <- esc %>% 
+  distinct(Location, Latitude, Longitude) %>% 
+  drop_na()
+
+datatable(locations)
+```
+Now we'll create the Leaflet map
+
+Leaflet uses the pipe symbol.
+
+we use the addTiles function to create the actual map. This addTiles function uses your locations that you've included to know what map to create. If I had locations in WA, it would zoom out the map.
+
+The add markers puts your actual locations on the map. And this also sets the parameters for your map so it knows to constrain your map to those points. Without that, it doesn't know how to constrain your map.
+
+The popups allow whatever you want to pop up when you toggle onto the individual points. You can include hyper links, images, etc. 
+
+```{r}
+leaflet(locations) %>% 
+  addTiles() %>% 
+  addMarkers(~ Longitude, ~Latitude, popup = ~ Location)
 ```
 
 
