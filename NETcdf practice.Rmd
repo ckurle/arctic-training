@@ -1,0 +1,118 @@
+---
+title: "NetCDF Files"
+author: "Carolyn Kurle"
+date: "January 18, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(ncdf4)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+```
+
+# Read in data from a file
+
+```{r}
+  nc <- nc_open("data/WG2013CTD.nc")
+```
+
+```{r}
+print(nc)
+```
+
+Fist you find out which variable names exist in these data by asking for the attribute names 
+
+
+```{r}
+vars <- attributes(nc$var)$names
+vars
+```
+
+Now we are pulling out the dimension data. They were using a format that was confusing.
+
+```{r}
+dims <- attributes(nc$dim)$names
+dims
+```
+
+nc get is how to pull the columns of data of interest
+
+
+```{r}
+salinity <- ncvar_get(nc, "sal")
+time <- ncvar_get(nc, "time")
+depth <- ncvar_get(nc, "z")
+```
+
+These data aren't regularly gridded (there are missing values, etc.) as they didn't capture data consistently the same across days. We are going to take it out of their matrix and put it into a data frame. For instance, their time format is weird. So we changed that using the as.POSIXct function. They had their time in matlab format.
+
+# Reformat the output
+
+```{r}
+time <- as.POSIXct((time + 719529)*86400, origin = "1970-01-01", tz = "UTC")
+```
+
+Coerce into a data frame
+
+```{r}
+salinity_data <- as.data.frame(salinity)
+```
+
+```{r}
+names(salinity_data) <- as.character(depth)
+```
+
+Now we'll reshape the data
+
+add a time column onto the salinity matrix that we forced into a data frame
+
+use gather to make our super wide data frame long. We made the column names something we named depth. We told it to ignore time (-time)
+
+Then we used mutate to change those columns (depth) into numerics.
+
+Then we arranged the data by time.
+
+```{r}
+salinity_data_long <- salinity_data %>% 
+  mutate(time = time) %>% 
+  gather(key = "depth", value = "salinity", -time) %>% 
+  mutate(depth = as.numeric(depth)) %>% 
+  arrange(time)
+
+head(salinity_data_long)
+```
+
+Now that it's in a data frame, we can create some plots from those data
+
+# Plots
+
+```{r}
+ggplot(salinity_data_long, mapping = aes(x = time, y = depth, fill = salinity)) +
+  geom_raster()
+```
+That plot doesn't make much sense.
+
+Let's plot it differently. We reversed the Y scale.
+
+```{r}
+ggplot(salinity_data_long, mapping = aes(x = salinity, y = depth, color = time)) +
+  geom_line() +
+  scale_y_reverse()
+```
+
+```{r}
+ggplot(salinity_data_long, mapping = aes(x = salinity,
+                                         y = depth,
+                                         color = time,
+                                         group = time)) +
+  geom_line(size = 0.1) +
+  scale_y_reverse()
+```
+
