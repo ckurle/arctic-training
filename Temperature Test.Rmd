@@ -1,0 +1,18 @@
+---
+title: "Temperature Test"
+author: "Carolyn Kurle"
+date: "January 17, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Source our utility functions and test them
+
+```{r}
+source("fahr_to_celsius.R")
+
+```
+
